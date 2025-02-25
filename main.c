@@ -25,7 +25,7 @@ char* model_name = "mistral";
 double temp = 1.2;
 
 int send_post_request_to_ai(int sd, struct http_url* url, char* prompt,char* context) {
-	char buf[2048];
+	char buf[4096];
   char json[2048];
 
   snprintf(json, sizeof(json),
@@ -35,7 +35,7 @@ int send_post_request_to_ai(int sd, struct http_url* url, char* prompt,char* con
     \"prompt\": \"%s\",\r\n\
     \"stream\": false,\r\n\
     \"options\": {\r\n\
-     \"temperature\": %d\r\n\
+     \"temperature\": %f\r\n\
    },\r\n\
   }\r\n\
   ", model_name, prompt, temp);
@@ -63,7 +63,8 @@ Content-Type: application/x-www-form-urlencoded\r\n\
 	return 0;
 }
 
-bool speak_to_ollama(char* prompt)
+// returns context
+char* speak_to_ollama(char* prompt,char* context)
 {
   struct http_url *ollama_url;
   struct http_message msg;
@@ -76,7 +77,7 @@ bool speak_to_ollama(char* prompt)
     return FALSE;
   }
   memset(&msg, 0, sizeof(msg));
-  if (!send_post_request_to_ai(socket, ollama_url,json)) {
+  if (!send_post_request_to_ai(socket, ollama_url,prompt,context)) {
     while (http_response(socket, &msg) > 0) {
       if (msg.content) {
         write(1, msg.content, msg.length);
@@ -113,11 +114,29 @@ bool check_if_ollama_exists()
   return TRUE;
 }
 
+void chat()
+{
+  puts("Asking gods why sky is blue to test the system:");
+  speak_to_ollama("Why is sky blue?", "empty");
+  puts("If the answer seems to be fine then you can continue:");
+  char* context = NULL;
+  char prompt[1024];
+  printf("> ");
+  fgets(prompt,sizeof(prompt),stdin);
+  context = speak_to_ollama(prompt, "empty");
+  while(TRUE)
+  {
+    printf("> ");
+    fgets(prompt,sizeof(prompt),stdin);
+    context = speak_to_ollama(prompt, context);
+  }
+}
+
 int main(int argc, char** argv)
 {
   if(!check_if_ollama_exists())
     return -1;
-  speak_to_ollama(test_question);
+  chat();
 	return 0;
 }
 
