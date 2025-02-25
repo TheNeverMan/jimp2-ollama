@@ -36,7 +36,7 @@ int send_post_request_to_ai(int sd, struct http_url* url, char* prompt,char* con
     \"stream\": false,\r\n\
     \"options\": {\r\n\
      \"temperature\": %f\r\n\
-   },\r\n\
+   }\r\n\
   }\r\n\
   ", model_name, prompt, temp);
 
@@ -77,23 +77,29 @@ char* speak_to_ollama(char* prompt,char* context)
     return FALSE;
   }
   memset(&msg, 0, sizeof(msg));
-  if (!send_post_request_to_ai(socket, ollama_url,prompt,context)) {
-    while (http_response(socket, &msg) > 0) {
-      if (msg.content) {
-        write(1, msg.content, msg.length);
-      }
+  if (!send_post_request_to_ai(socket, ollama_url,prompt,context))
+  {
+    while (http_response(socket, &msg) > 0)
+    {
+        if (msg.content)
+        {
+          write(1, msg.content, msg.length);
+          break; // ugly hack to avoid http_response clogging up
+        }
     }
   }
+  puts("---");
 
   free(ollama_url);
   close(socket);
 
-if (msg.header.code != 200) {
-  fprintf(
-    stderr,
-    "error: returned HTTP code %d\n",
-    msg.header.code);
-}
+if (msg.header.code != 200)
+  {
+    fprintf(
+      stderr,
+      "error: returned HTTP code %d\n",
+      msg.header.code);
+  }
 
 }
 
@@ -123,11 +129,13 @@ void chat()
   char prompt[1024];
   printf("> ");
   fgets(prompt,sizeof(prompt),stdin);
+  prompt[strcspn(prompt, "\n")] = 0; // remove trailing newline
   context = speak_to_ollama(prompt, "empty");
   while(TRUE)
   {
     printf("> ");
     fgets(prompt,sizeof(prompt),stdin);
+    prompt[strcspn(prompt, "\n")] = 0; // remove trailing newline
     context = speak_to_ollama(prompt, context);
   }
 }
