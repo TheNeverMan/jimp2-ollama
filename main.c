@@ -144,6 +144,8 @@ int main(int argc, char** argv)
 {
   if(!check_if_ollama_exists())
     return -1;
+  puts("Please enter temperature value:");
+  scanf("%f",temp);
   chat();
 	return 0;
 }
